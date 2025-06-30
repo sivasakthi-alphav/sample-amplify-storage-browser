@@ -8,7 +8,7 @@ export const auth = defineAuth({
   loginWith: {
     email: true,
   },
-  // Define both admin and default groups
-  groups: ['admin', 'default']
+  // Only define the admin group - 'default' group already exists in the UserPool
+  groups: ['admin']
 });
 

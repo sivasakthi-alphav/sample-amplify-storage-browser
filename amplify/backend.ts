@@ -37,12 +37,14 @@ backend.addOutput({
         //@ts-expect-error amplify backend type issue https://github.com/aws-amplify/amplify-backend/issues/2569
         paths: {
           "public/*": {
-            guest: ["get", "list"],
-            authenticated: ["get", "list", "write", "delete"],
+            // Only admin group can access public folder
+            groupsadmin: ["get", "list", "write", "delete"],
+            // No access for regular authenticated users
           },
           "admin/*": {
+            // Only admin group can access admin folder
             groupsadmin: ["get", "list", "write", "delete"],
-            authenticated: ["get", "list", "write", "delete"],
+            // No access for regular authenticated users
           },
         },
       },
@@ -53,41 +55,44 @@ backend.addOutput({
 /**
  * Define an inline policy to attach to Amplify's un-auth role
  * This policy defines how unauthenticated users can access your existing bucket
+ * For this use case, we're not allowing any access to unauthenticated users
  */
 const unauthPolicy = new Policy(backend.stack, "customBucketUnauthPolicy", {
   statements: [
-    new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: ["s3:GetObject"],
-      resources: [`arn:aws:s3:::${customBucketName}/public/*`],
-    }),
-    new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: ["s3:ListBucket"],
-      resources: [`arn:aws:s3:::${customBucketName}`],
-      conditions: {
-        StringLike: {
-          "s3:prefix": ["public/*", "public/"],
-        },
-      },
-    }),
+    // No statements = no permissions
   ],
 });
 
 /**
  * Define an inline policy to attach to Amplify's auth role
  * This policy defines how authenticated users can access your existing bucket
+ * For this use case, default group users (regular authenticated users) have no access
  */
 const authPolicy = new Policy(backend.stack, "customBucketAuthPolicy", {
   statements: [
+    // No statements = no permissions for regular authenticated users
+    // This ensures users in the 'default' group (which is all authenticated users
+    // not in the admin group) won't have any access to the bucket
+  ],
+});
+
+/**
+ * Define an inline policy to attach to Admin user role
+ * This policy defines how admin users can access your existing bucket
+ * Only users in the admin group will have access to the bucket
+ */
+const adminPolicy = new Policy(backend.stack, "customBucketAdminPolicy", {
+  statements: [
+    // Full CRUD access to both public and admin folders
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
       resources: [
         `arn:aws:s3:::${customBucketName}/public/*`,
-        `arn:aws:s3:::${customBucketName}/admin/*`,
+        `arn:aws:s3:::${customBucketName}/admin/*`
       ],
     }),
+    // Allow listing the entire bucket
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
@@ -98,33 +103,6 @@ const authPolicy = new Policy(backend.stack, "customBucketAuthPolicy", {
       conditions: {
         StringLike: {
           "s3:prefix": ["public/*", "public/", "admin/*", "admin/"],
-        },
-      },
-    }),
-  ],
-});
-
-/**
- * Define an inline policy to attach to Admin user role
- * This policy defines how authenticated users can access your existing bucket
- */
-const adminPolicy = new Policy(backend.stack, "customBucketAdminPolicy", {
-  statements: [
-    new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-      resources: [`arn:aws:s3:::${customBucketName}/admin/*`],
-    }),
-    new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: ["s3:ListBucket"],
-      resources: [
-        `arn:aws:s3:::${customBucketName}`,
-        `arn:aws:s3:::${customBucketName}/*`,
-      ],
-      conditions: {
-        StringLike: {
-          "s3:prefix": ["admin/*", "admin/"],
         },
       },
     }),

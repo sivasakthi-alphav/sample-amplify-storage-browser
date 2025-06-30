@@ -8,5 +8,7 @@ export const auth = defineAuth({
   loginWith: {
     email: true,
   },
-  groups: ['admin']
+  // Define both admin and default groups
+  groups: ['admin', 'default']
 });
+

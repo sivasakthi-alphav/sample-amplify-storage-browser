@@ -22,7 +22,7 @@ const backend = defineBackend({
  *
  * Note: Ensure the bucket exists before deploying this code, as it only sets up IAM policies and does not create the S3 bucket.
  */
-const customBucketName = "my-existing-bucket";
+const customBucketName = "my-existing-bucket-one";
 
 backend.addOutput({
   version: "1.3",

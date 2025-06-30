@@ -59,11 +59,11 @@ const unauthPolicy = new Policy(backend.stack, "customBucketUnauthPolicy", {
 /**
  * Define an inline policy to attach to Amplify's auth role
  * This policy defines how authenticated users can access your existing bucket
- * For your requirements, regular authenticated users (public group) have no access
+ * For your requirements, regular authenticated users (publicUser group) have no access
  */
 const authPolicy = new Policy(backend.stack, "customBucketAuthPolicy", {
   statements: [
-    // No permissions for regular authenticated users (public group)
+    // No permissions for regular authenticated users (publicUser group)
   ],
 });
 
@@ -98,9 +98,9 @@ backend.auth.resources.authenticatedUserIamRole.attachInlinePolicy(authPolicy);
 // Add full access policy to the admin user role
 backend.auth.resources.groups["admin"].role.attachInlinePolicy(adminPolicy);
 
-// Add empty policy to the public group role
-backend.auth.resources.groups["public"].role.attachInlinePolicy(
-  new Policy(backend.stack, "customBucketPublicGroupPolicy", {
-    statements: [] // No permissions for public group
+// Add empty policy to the publicUser group role
+backend.auth.resources.groups["publicUser"].role.attachInlinePolicy(
+  new Policy(backend.stack, "customBucketPublicUserGroupPolicy", {
+    statements: [] // No permissions for publicUser group
   })
 );

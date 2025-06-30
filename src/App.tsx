@@ -17,15 +17,18 @@ const { StorageBrowser } = createStorageBrowser({
 function App() {
   return (
     <Authenticator>
-      {({ signOut, user }) => (
-        <>
+      {({ signOut, user }) => {
+console.log(user);
+        return (
+          <>
           <Flex direction="row" alignItems="center" wrap="nowrap" gap="1rem">
-            <Heading level={4}>{`Hello ${user?.username}`}</Heading>
+            <Heading level={4}>{`Hello ${user?.signInDetails?.loginId}`}</Heading>
             <Button onClick={signOut}>Sign out</Button>
           </Flex>
           <StorageBrowser />
         </>
       )}
+    }
     </Authenticator>
   );
 }

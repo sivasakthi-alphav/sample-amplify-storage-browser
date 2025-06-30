@@ -36,15 +36,8 @@ backend.addOutput({
         aws_region: "eu-north-1",
         //@ts-expect-error amplify backend type issue https://github.com/aws-amplify/amplify-backend/issues/2569
         paths: {
-          "public/*": {
-            // Only admin group can access public folder
+          "*": {
             groupsadmin: ["get", "list", "write", "delete"],
-            // No access for regular authenticated users
-          },
-          "admin/*": {
-            // Only admin group can access admin folder
-            groupsadmin: ["get", "list", "write", "delete"],
-            // No access for regular authenticated users
           },
         },
       },
@@ -55,67 +48,59 @@ backend.addOutput({
 /**
  * Define an inline policy to attach to Amplify's un-auth role
  * This policy defines how unauthenticated users can access your existing bucket
- * For this use case, we're not allowing any access to unauthenticated users
+ * For your requirements, unauthenticated users have no access
  */
 const unauthPolicy = new Policy(backend.stack, "customBucketUnauthPolicy", {
   statements: [
-    // No statements = no permissions
+    // No permissions for unauthenticated users
   ],
 });
 
 /**
  * Define an inline policy to attach to Amplify's auth role
  * This policy defines how authenticated users can access your existing bucket
- * For this use case, default group users (regular authenticated users) have no access
+ * For your requirements, regular authenticated users (public group) have no access
  */
 const authPolicy = new Policy(backend.stack, "customBucketAuthPolicy", {
   statements: [
-    // No statements = no permissions for regular authenticated users
-    // This ensures users in the 'default' group (which is all authenticated users
-    // not in the admin group) won't have any access to the bucket
+    // No permissions for regular authenticated users (public group)
   ],
 });
 
 /**
  * Define an inline policy to attach to Admin user role
- * This policy defines how admin users can access your existing bucket
- * Only users in the admin group will have access to the bucket
+ * This policy defines how admin group users can access your existing bucket
+ * Only admin group users have full access to the bucket
  */
 const adminPolicy = new Policy(backend.stack, "customBucketAdminPolicy", {
   statements: [
-    // Full CRUD access to both public and admin folders
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-      resources: [
-        `arn:aws:s3:::${customBucketName}/public/*`,
-        `arn:aws:s3:::${customBucketName}/admin/*`
-      ],
+      resources: [`arn:aws:s3:::${customBucketName}/*`],
     }),
-    // Allow listing the entire bucket
     new PolicyStatement({
       effect: Effect.ALLOW,
       actions: ["s3:ListBucket"],
-      resources: [
-        `arn:aws:s3:::${customBucketName}`,
-        `arn:aws:s3:::${customBucketName}/*`,
-      ],
-      conditions: {
-        StringLike: {
-          "s3:prefix": ["public/*", "public/", "admin/*", "admin/"],
-        },
-      },
+      resources: [`arn:aws:s3:::${customBucketName}`],
     }),
   ],
 });
 
-// Add the policies to the unauthenticated user role
+// Add the empty policy to the unauthenticated user role
 backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(
   unauthPolicy
 );
 
-// Add the policies to the authenticated user role
+// Add the empty policy to the authenticated user role (public group users)
 backend.auth.resources.authenticatedUserIamRole.attachInlinePolicy(authPolicy);
 
-// Add the policies to the admin user role
+// Add full access policy to the admin user role
 backend.auth.resources.groups["admin"].role.attachInlinePolicy(adminPolicy);
+
+// Add empty policy to the public group role
+backend.auth.resources.groups["public"].role.attachInlinePolicy(
+  new Policy(backend.stack, "customBucketPublicGroupPolicy", {
+    statements: [] // No permissions for public group
+  })
+);

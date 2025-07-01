@@ -93,66 +93,85 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
   // },
 };
 
-// Group Policy Configurations
-export const GROUP_POLICIES: Record<string, GroupPolicyMapping[]> = {
-  // Policies for BUCKET_ONE
-  BUCKET_ONE: [
-    {
-      groupName: USER_GROUPS.ADMIN,
-      policies: [
-        {
-          name: "AdminFullAccess",
-          effect: Effect.ALLOW,
-          actions: S3_ACTIONS.FULL_ACCESS,
-          resources: [
-            `arn:aws:s3:::${S3_BUCKETS.BUCKET_ONE.bucketName}/*`,
-            `arn:aws:s3:::${S3_BUCKETS.BUCKET_ONE.bucketName}`,
-          ],
-        },
-      ],
-    },
-    {
-      groupName: USER_GROUPS.PUBLIC_USER,
-      policies: [], // No permissions for public users
-    },
-  ],
-  BUCKET_TWO: [
-    {
-      groupName: USER_GROUPS.ADMIN,
-      policies: [
-        {
-          name: "AdminFullAccess",
-          effect: Effect.ALLOW,
-          actions: S3_ACTIONS.FULL_ACCESS,
-          resources: [
-            `arn:aws:s3:::${S3_BUCKETS.BUCKET_TWO.bucketName}/*`,
-            `arn:aws:s3:::${S3_BUCKETS.BUCKET_TWO.bucketName}`,
-          ],
-        },
-      ],
-    },
-    {
-      groupName: USER_GROUPS.PUBLIC_USER,
-      policies: [], // No permissions for public users
-    },
-  ],
-  
-  // Add more bucket policies as needed
+// Group policies structure that applies to all buckets
+export const GROUP_POLICIES: Record<string, Record<string, string[]>> = {
+  // Define which buckets each group can access
+  [USER_GROUPS.ADMIN]: {
+    // Admin can access all buckets with full permissions
+    "my-existing-bucket-one": ["get", "list", "write", "delete"],
+    "my-existing-bucket-two": ["get", "list", "write", "delete"],
+    // Add more buckets here as needed
+  },
+  [USER_GROUPS.PUBLIC_USER]: {
+    // Public users can only access specific buckets with limited permissions
+    // For example, no access to bucket one
+    "my-existing-bucket-one": [],
+    // But read-only access to bucket two
+    "my-existing-bucket-two": ["get", "list"],
+    // Add more buckets here as needed
+  },
+  // Add more groups here as needed
 };
+
+// Helper function to generate IAM policy statements for a group
+export function generatePolicyStatementsForGroup(groupName: string): PolicyConfig[] {
+  const groupBuckets = GROUP_POLICIES[groupName];
+  if (!groupBuckets) return [];
+  
+  const policies: PolicyConfig[] = [];
+  
+  // Process each bucket for this group
+  Object.entries(groupBuckets).forEach(([bucketName, actions]) => {
+    // Skip if no actions defined
+    if (!actions || actions.length === 0) return;
+    
+    // Map actions to S3 actions
+    const s3Actions: string[] = [];
+    if (actions.includes('list')) s3Actions.push('s3:ListBucket');
+    if (actions.includes('get')) s3Actions.push('s3:GetObject');
+    if (actions.includes('write')) s3Actions.push('s3:PutObject');
+    if (actions.includes('delete')) s3Actions.push('s3:DeleteObject');
+    
+    // Skip if no S3 actions mapped
+    if (s3Actions.length === 0) return;
+    
+    // Create bucket-level policy if needed
+    if (s3Actions.includes('s3:ListBucket')) {
+      policies.push({
+        name: `${groupName}${bucketName}ListPolicy`,
+        effect: Effect.ALLOW,
+        actions: ['s3:ListBucket', 's3:GetBucketLocation'],
+        resources: [`arn:aws:s3:::${bucketName}`],
+      });
+    }
+    
+    // Create object-level policy if needed
+    const objectActions = s3Actions.filter(action => action !== 's3:ListBucket');
+    if (objectActions.length > 0) {
+      policies.push({
+        name: `${groupName}${bucketName}ObjectPolicy`,
+        effect: Effect.ALLOW,
+        actions: objectActions,
+        resources: [`arn:aws:s3:::${bucketName}/*`],
+      });
+    }
+  });
+  
+  return policies;
+}
 
 // Helper function to get bucket by name
 export function getBucketByName(bucketName: string): BucketConfig | undefined {
   return Object.values(S3_BUCKETS).find(bucket => bucket.bucketName === bucketName);
 }
 
-// Helper function to get policies for a group and bucket
-export function getPoliciesForGroupAndBucket(
+// Helper function to get permissions for a group and bucket
+export function getPermissionsForGroupAndBucket(
   groupName: string,
-  bucketKey: string
-): PolicyConfig[] {
-  const bucketPolicies = GROUP_POLICIES[bucketKey];
-  if (!bucketPolicies) return [];
-
-  const groupMapping = bucketPolicies.find(mapping => mapping.groupName === groupName);
-  return groupMapping ? groupMapping.policies : [];
+  bucketName: string
+): string[] {
+  const groupBuckets = GROUP_POLICIES[groupName];
+  if (!groupBuckets) return [];
+  
+  return groupBuckets[bucketName] || [];
 }

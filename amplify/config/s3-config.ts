@@ -59,11 +59,11 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     name: "my-existing-bucket-one",
     bucketName: "my-existing-bucket-one",
     region: AWS_REGIONS.EU_NORTH_1,
-    paths: {
-      "*": {
-        groupsadmin: ["get", "list", "write", "delete"],
-      },
-    },
+  },
+  BUCKET_TWO: {
+    name: "my-existing-bucket-two",
+    bucketName: "my-existing-bucket-two",
+    region: AWS_REGIONS.EU_NORTH_1,
   },
   // Add more buckets as needed
   // Example:
@@ -97,6 +97,27 @@ export const GROUP_POLICIES: Record<string, GroupPolicyMapping[]> = {
           resources: [
             `arn:aws:s3:::${S3_BUCKETS.BUCKET_ONE.bucketName}/*`,
             `arn:aws:s3:::${S3_BUCKETS.BUCKET_ONE.bucketName}`,
+          ],
+        },
+      ],
+    },
+    {
+      groupName: USER_GROUPS.PUBLIC_USER,
+      policies: [], // No permissions for public users
+    },
+  ],
+  // Policies for BUCKET_TWO
+  BUCKET_TWO: [
+    {
+      groupName: USER_GROUPS.ADMIN,
+      policies: [
+        {
+          name: "AdminFullAccess",
+          effect: Effect.ALLOW,
+          actions: S3_ACTIONS.FULL_ACCESS,
+          resources: [
+            `arn:aws:s3:::${S3_BUCKETS.BUCKET_TWO.bucketName}/*`,
+            `arn:aws:s3:::${S3_BUCKETS.BUCKET_TWO.bucketName}`,
           ],
         },
       ],

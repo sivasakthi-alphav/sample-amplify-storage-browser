@@ -63,6 +63,8 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     paths: {
       "*": {
         groupsadmin: ["get", "list", "write", "delete"],
+        groupspublicUser: ["get", "list", "write", "delete"],
+        groupsfinance: ["get", "list", "write", "delete"],
       },
     },
   },
@@ -72,7 +74,9 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     region: AWS_REGIONS.EU_NORTH_1,
     paths: {
       "*": {
+        groupsadmin: ["get", "list", "write", "delete"],
         groupspublicUser: ["get", "list", "write", "delete"],
+        groupsfinance: ["get", "list", "write", "delete"],
       },
     },
   },
@@ -82,6 +86,8 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     region: AWS_REGIONS.EU_NORTH_1,
     paths: {
       "*": {
+        groupsadmin: ["get", "list", "write", "delete"],
+        groupspublicUser: ["get", "list", "write", "delete"],
         groupsfinance: ["get", "list"],
       },
     },
@@ -111,23 +117,22 @@ export const GROUP_POLICIES: Record<string, Record<string, string[]>> = {
   [USER_GROUPS.ADMIN]: {
     // Admin can access all buckets with full permissions
     "my-existing-bucket-one": ["get", "list", "write", "delete"],
-    "my-existing-bucket-two": ["get", "list", "write", "delete"],
-    "my-existing-bucket-three": ["get", "list", "write", "delete"],
+   
     // Add more buckets here as needed
   },
   [USER_GROUPS.PUBLIC_USER]: {
     // Public users can only access specific buckets with limited permissions
     // For example, no access to bucket one
-    "my-existing-bucket-one": ["get", "list", "write", "delete"],
+    // "my-existing-bucket-one": ["get", "list", "write", "delete"],
     // But read-only access to bucket two
     "my-existing-bucket-two": ["get", "list", "write", "delete"],
-    "my-existing-bucket-three": ["get", "list", "write", "delete"],
+    // "my-existing-bucket-three": ["get", "list", "write", "delete"],
     // Add more buckets here as needed
   },
   [USER_GROUPS.FINANCE]: {
     // Finance users can access specific buckets with limited permissions
-    "my-existing-bucket-one": ["get", "list", "write", "delete"],
-    "my-existing-bucket-two": ["get", "list", "write", "delete"],
+    // "my-existing-bucket-one": ["get", "list", "write", "delete"],
+    // "my-existing-bucket-two": ["get", "list", "write", "delete"],
     "my-existing-bucket-three": ["get", "list", "write", "delete"],
     // Add more buckets here as needed
   },

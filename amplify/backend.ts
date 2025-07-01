@@ -4,19 +4,19 @@ import { Policy, PolicyStatement, Effect } from "aws-cdk-lib/aws-iam";
 import { S3_BUCKETS, GROUP_POLICIES, USER_GROUPS } from "./config/s3-config";
 
 /**
- * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
- */
+* @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
+*/
 const backend = defineBackend({
   auth,
 });
 
 /**
- * Note: This code uses the S3 bucket configurations defined in the s3-config.ts file.
- * To add new buckets or modify existing ones, update the configuration in that file.
- * For more information on authorization access, visit: https://docs.amplify.aws/react/build-a-backend/storage/authorization/#available-actions
- *
- * Note: Ensure the buckets exist before deploying this code, as it only sets up IAM policies and does not create the S3 buckets.
- */
+* Note: This code uses the S3 bucket configurations defined in the s3-config.ts file.
+* To add new buckets or modify existing ones, update the configuration in that file.
+* For more information on authorization access, visit: https://docs.amplify.aws/react/build-a-backend/storage/authorization/#available-actions
+*
+* Note: Ensure the buckets exist before deploying this code, as it only sets up IAM policies and does not create the S3 buckets.
+*/
 // Get the first bucket from the configuration
 const firstBucket = S3_BUCKETS.BUCKET_ONE;
 
@@ -38,8 +38,8 @@ backend.addOutput({
 });
 
 /**
- * Create policies for each bucket and group based on the configuration
- */
+* Create policies for each bucket and group based on the configuration
+*/
 
 // Create empty policies for unauthenticated and authenticated users
 const unauthPolicy = new Policy(backend.stack, "customBucketUnauthPolicy", {
@@ -61,10 +61,10 @@ const groupPolicies = new Map();
 Object.entries(GROUP_POLICIES).forEach(([bucketKey, groupMappings]) => {
   groupMappings.forEach(mapping => {
     const { groupName, policies } = mapping;
-    
+
     // Skip if no policies defined for this group
     if (!policies || policies.length === 0) return;
-    
+
     // Create policy statements for this group and bucket
     const policyStatements = policies.map(policy => {
       return new PolicyStatement({
@@ -73,7 +73,7 @@ Object.entries(GROUP_POLICIES).forEach(([bucketKey, groupMappings]) => {
         resources: policy.resources,
       });
     });
-    
+
     // Create or update policy for this group
     if (!groupPolicies.has(groupName)) {
       groupPolicies.set(groupName, new Policy(backend.stack, `customBucket${groupName}Policy`, {

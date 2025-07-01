@@ -63,8 +63,6 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     paths: {
       "*": {
         groupsadmin: ["get", "list", "write", "delete"],
-        groupspublicUser: ["get", "list", "write", "delete"], // Add publicUser access
-        groupsfinance: ["get", "list", "write", "delete"],     // Add finance access
       },
     },
   },
@@ -74,9 +72,7 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     region: AWS_REGIONS.EU_NORTH_1,
     paths: {
       "*": {
-        groupsadmin: ["get", "list", "write", "delete"],      // Add admin access
         groupspublicUser: ["get", "list", "write", "delete"],
-        groupsfinance: ["get", "list", "write", "delete"],     // Add finance access
       },
     },
   },
@@ -86,8 +82,6 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     region: AWS_REGIONS.EU_NORTH_1,
     paths: {
       "*": {
-        groupsadmin: ["get", "list", "write", "delete"],      // Add admin access
-        groupspublicUser: ["get", "list", "write", "delete"],  // Add publicUser access
         groupsfinance: ["get", "list"],
       },
     },

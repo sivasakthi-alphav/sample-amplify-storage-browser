@@ -99,17 +99,19 @@ function AuthenticatedContent(props: {
             <Loader />
           </Flex>
         </View>
-      ) : isAdmin() ? (
+      ) : 
+      // isAdmin() ? (
         <>
           <Text variation="success" padding="0.5rem">You have admin access</Text>
           <AdminStorageBrowser />
         </>
-      ) : (
-        <View padding="1rem">
-          <Text variation="warning">You don't have permission to access storage.</Text>
-          <Text>Contact an administrator to be added to the admin group.</Text>
-        </View>
-      )}
+      // ) : (
+      //   <View padding="1rem">
+      //     <Text variation="warning">You don't have permission to access storage.</Text>
+      //     <Text>Contact an administrator to be added to the admin group.</Text>
+      //   </View>
+      // )
+      }
     </>
   );
 }

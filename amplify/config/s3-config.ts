@@ -62,6 +62,7 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     paths: {
       "*": {
         groupsadmin: ["get", "list", "write", "delete"],
+        groupspublicUser: ["get", "list", "write", "delete"],
       },
     },
   },
@@ -72,6 +73,7 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     paths: {
       "*": {
         groupsadmin: ["get", "list", "write", "delete"],
+        groupspublicUser: ["get", "list", "write", "delete"],
       },
     },
   },
@@ -105,9 +107,9 @@ export const GROUP_POLICIES: Record<string, Record<string, string[]>> = {
   [USER_GROUPS.PUBLIC_USER]: {
     // Public users can only access specific buckets with limited permissions
     // For example, no access to bucket one
-    "my-existing-bucket-one": [],
+    "my-existing-bucket-one": ["get", "list", "write", "delete"],
     // But read-only access to bucket two
-    "my-existing-bucket-two": ["get", "list"],
+    "my-existing-bucket-two": ["get", "list", "write", "delete"],
     // Add more buckets here as needed
   },
   // Add more groups here as needed

@@ -86,7 +86,7 @@ function AuthenticatedContent(props: {
       </View>
     );
   }
-
+  console.log("userGroups",userGroups)
   return (
     <>
       <Flex direction="row" alignItems="center" wrap="nowrap" gap="1rem">

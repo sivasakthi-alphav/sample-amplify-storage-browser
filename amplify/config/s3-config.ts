@@ -71,7 +71,7 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     region: AWS_REGIONS.EU_NORTH_1,
     paths: {
       "*": {
-        groupspublicUser: ["get", "list", "write", "delete"],
+        groupsadmin: ["get", "list", "write", "delete"],
       },
     },
   },
@@ -114,28 +114,6 @@ export const GROUP_POLICIES: Record<string, GroupPolicyMapping[]> = {
     {
       groupName: USER_GROUPS.PUBLIC_USER,
       policies: [], // No permissions for public users
-    },
-  ],
-  // Policies for BUCKET_TWO
-  BUCKET_TWO: [
-    {
-      groupName: USER_GROUPS.PUBLIC_USER,
-      policies: [
-        {
-          name: "PublicUserFullAccess",
-          effect: Effect.ALLOW,
-          actions: S3_ACTIONS.FULL_ACCESS,
-          resources: [
-            `arn:aws:s3:::${S3_BUCKETS.BUCKET_TWO.bucketName}/*`,
-            `arn:aws:s3:::${S3_BUCKETS.BUCKET_TWO.bucketName}`,
-          ],
-        },
-      ],
-    },
-    {
-      groupName: USER_GROUPS.ADMIN,
-      policies: [
-      ], // No permissions for public users
     },
   ],
   // Add more bucket policies as needed

@@ -116,6 +116,27 @@ export const GROUP_POLICIES: Record<string, GroupPolicyMapping[]> = {
       policies: [], // No permissions for public users
     },
   ],
+  BUCKET_TWO: [
+    {
+      groupName: USER_GROUPS.ADMIN,
+      policies: [
+        {
+          name: "AdminFullAccess",
+          effect: Effect.ALLOW,
+          actions: S3_ACTIONS.FULL_ACCESS,
+          resources: [
+            `arn:aws:s3:::${S3_BUCKETS.BUCKET_TWO.bucketName}/*`,
+            `arn:aws:s3:::${S3_BUCKETS.BUCKET_TWO.bucketName}`,
+          ],
+        },
+      ],
+    },
+    {
+      groupName: USER_GROUPS.PUBLIC_USER,
+      policies: [], // No permissions for public users
+    },
+  ],
+  
   // Add more bucket policies as needed
 };
 

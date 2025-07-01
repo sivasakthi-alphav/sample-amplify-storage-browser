@@ -33,6 +33,8 @@ function AuthenticatedContent(props: {
   // Function to check if user is in admin group
   const isAdmin = () => userGroups.includes('admin');
 
+  console.log("isAdmin", isAdmin);
+  
   // Get user groups when user is authenticated
   useEffect(() => {
     const getUserGroups = async () => {

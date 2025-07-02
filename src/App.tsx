@@ -10,6 +10,8 @@ import { Amplify } from 'aws-amplify';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Authenticator, Button, Flex, Heading, Text, View, Loader, ThemeProvider, createTheme } from '@aws-amplify/ui-react';
 import { useEffect, useState } from 'react';
+// Define allowed domains
+const ALLOWED_DOMAINS = ["xops.sh", "alphav.io"];
 Amplify.configure(config);
 
 // Simple component for the storage browser
@@ -301,7 +303,16 @@ const theme = createTheme({
   },
 });
 
-
+const services = { 
+async validateCustomSignUp(formData:any) {
+  const domain = formData?.email?.split('@').pop();
+  if (ALLOWED_DOMAINS.length > 0 && domain && !ALLOWED_DOMAINS.includes(domain)) {
+    return {
+      email: `Only email addresses from ${ALLOWED_DOMAINS.join(' or ')} are allowed.`,
+    };
+  }
+},
+};
 
 // Main App component
 function App() {
@@ -311,6 +322,7 @@ function App() {
           components={components}
           formFields={formFields}
           variation="default"
+          services={services}
           socialProviders={[/*'google', 'facebook', 'amazon'*/]}
         >
           {({ signOut, user }) => {

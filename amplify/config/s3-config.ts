@@ -17,7 +17,7 @@ export const AWS_REGIONS = {
 // Define user groups
 export const USER_GROUPS = {
   ADMIN: "admin",
-  PUBLIC_USER: "publicUser",
+  USER: "user",
   FINANCE: "finance",
   // Add more groups as needed
   // Example: FINANCE: "finance",
@@ -61,9 +61,9 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     bucketName: "my-existing-bucket-one",
     region: AWS_REGIONS.EU_NORTH_1,
     paths: {
-      "*": {
-        groupsadmin: ["get", "list", "write", "delete"],
-      },
+    "*": {
+      "admin":["get","list","write","delete"],
+    }
     },
   },
   BUCKET_TWO: {
@@ -71,9 +71,10 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     bucketName: "my-existing-bucket-two",
     region: AWS_REGIONS.EU_NORTH_1,
     paths: {
-      "*": {
-        groupspublicUser: ["get", "list", "write", "delete"],
-      },
+    "*": {
+      "user":["get","list","write","delete"],
+      "admin":["get","list","write","delete"],
+    }
     },
   },
   BUCKET_THREE: {
@@ -81,9 +82,10 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     bucketName: "my-existing-bucket-three",
     region: AWS_REGIONS.EU_NORTH_1,
     paths: {
-      "*": {
-        groupsfinance: ["get", "list"],
-      },
+    "*": {
+      "finance":["get","list","write","delete"],
+      "admin":["get","list","write","delete"],
+    }
     },
   },
   
@@ -95,7 +97,7 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
   //   region: AWS_REGIONS.US_EAST_1,
   //   paths: {
   //     "public/*": {
-  //       groupspublicUser: ["get", "list"],
+  //       user: ["get", "list"],
   //       groupsadmin: ["get", "list", "write", "delete"],
   //     },
   //     "private/*": {
@@ -115,7 +117,7 @@ export const GROUP_POLICIES: Record<string, Record<string, string[]>> = {
     "my-existing-bucket-three": ["get", "list", "write", "delete"],
     // Add more buckets here as needed
   },
-  [USER_GROUPS.PUBLIC_USER]: {
+  [USER_GROUPS.USER]: {
     // Public users can only access specific buckets with limited permissions
     // For example, no access to bucket one
     "my-existing-bucket-one": ["get", "list", "write", "delete"],

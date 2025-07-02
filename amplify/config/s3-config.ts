@@ -61,9 +61,9 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     bucketName: "my-existing-bucket-one",
     region: AWS_REGIONS.EU_NORTH_1,
     paths: {
-    "*": {
-      "admin":["get","list","write","delete"],
-    }
+      "*": {
+        "admin":["get","list","write","delete"],
+      }
     },
   },
   BUCKET_TWO: {
@@ -71,10 +71,10 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     bucketName: "my-existing-bucket-two",
     region: AWS_REGIONS.EU_NORTH_1,
     paths: {
-    "*": {
-      "user":["get","list","write","delete"],
-      "admin":["get","list","write","delete"],
-    }
+      "*": {
+        "user":["get","list","write","delete"],
+        "admin":["get","list","write","delete"],
+      }
     },
   },
   BUCKET_THREE: {
@@ -82,10 +82,10 @@ export const S3_BUCKETS: Record<string, BucketConfig> = {
     bucketName: "my-existing-bucket-three",
     region: AWS_REGIONS.EU_NORTH_1,
     paths: {
-    "*": {
-      "finance":["get","list","write","delete"],
-      "admin":["get","list","write","delete"],
-    }
+      "*": {
+        "finance":["get","list","write","delete"],
+        "admin":["get","list","write","delete"],
+      }
     },
   },
   

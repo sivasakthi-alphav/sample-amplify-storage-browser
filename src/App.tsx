@@ -1,23 +1,107 @@
 import {
-  createAmplifyAuthAdapter,
+  // createAmplifyAuthAdapter,
   createStorageBrowser,
 } from '@aws-amplify/ui-react-storage/browser';
 import '@aws-amplify/ui-react-storage/styles.css';
 import './App.css';
 
 import config from '../amplify_outputs.json';
+import bucketsConfig from '../buckets.json';
 import { Amplify } from 'aws-amplify';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import { Authenticator, Button, Flex, Heading, Text, View, Loader, ThemeProvider, createTheme } from '@aws-amplify/ui-react';
-import { useEffect, useState } from 'react';
+import { Authenticator, Button, Flex, Heading, Text, View, ThemeProvider, createTheme } from '@aws-amplify/ui-react';
+// import { useEffect, useState } from 'react';
 // Define allowed domains
 const ALLOWED_DOMAINS = ["xops.sh", "alphav.io"];
 Amplify.configure(config);
 
+// Define bucket type
+type BucketConfig = {
+  bucket: string;
+  region: string;
+  prefix: string;
+  id: string;
+  type: 'BUCKET' | 'PREFIX';
+  permissions: Array<'delete' | 'get' | 'list' | 'write'>;
+};
+
+// Convert buckets.json data into a Record for easier lookup
+const allBuckets: Record<string, BucketConfig> = bucketsConfig.buckets.reduce((acc, bucket) => {
+  acc[bucket.bucket] = {
+    ...bucket,
+    type: 'BUCKET' as const,
+    permissions: bucket.permissions as Array<'delete' | 'get' | 'list' | 'write'>
+  };
+  return acc;
+}, {} as Record<string, BucketConfig>);
+
+// Create group to bucket mapping from buckets.json
+const groupBucketMapping = bucketsConfig.buckets.reduce((acc, bucket) => {
+  bucket.accesablegroups.forEach(group => {
+    if (!acc[group]) {
+      acc[group] = [];
+    }
+    acc[group].push(bucket.bucket);
+  });
+  return acc;
+}, {} as Record<string, string[]>);
+
 // Simple component for the storage browser
 function AdminStorageBrowser() {
   const { StorageBrowser } = createStorageBrowser({
-    config: createAmplifyAuthAdapter(),
+    config: {
+      // Default AWS `region` and `accountId` of the S3 buckets.
+      region: 'eu-north-1',
+      accountId: '522820335540',
+      listLocations: async (input = {}) => {
+        console.log("input", input);
+        const { tokens } = await fetchAuthSession({ forceRefresh: true });
+        const cognitoGroups = tokens?.idToken?.payload['cognito:groups'];
+        const groups = Array.isArray(cognitoGroups) ? cognitoGroups : [];
+        
+        // Get unique accessible buckets based on user's groups
+        const accessibleBuckets = new Set<string>();
+        groups.forEach(group => {
+          const buckets = groupBucketMapping[group as keyof typeof groupBucketMapping] || [];
+          buckets.forEach(bucket => accessibleBuckets.add(bucket));
+        });
+
+        // Convert bucket names to bucket configurations
+        const items = Array.from(accessibleBuckets)
+          .map(bucketName => allBuckets[bucketName as keyof typeof allBuckets])
+          .filter(Boolean);
+
+        console.log('User groups:', groups);
+        console.log('Accessible buckets:', items.map(item => item.bucket));
+
+        return {
+          items,
+          nextToken: ""
+        }
+      },
+      getLocationCredentials: async ({ scope, permissions }) => {
+        console.log("scope", scope, "permissions", permissions);
+        
+        // Get credentials from environment variables
+          const { credentials } = await fetchAuthSession();
+          if (!credentials?.accessKeyId || !credentials?.secretAccessKey || !credentials?.sessionToken) {
+            throw new Error('Invalid credentials received');
+          }
+          return {
+            credentials: {
+              accessKeyId: credentials.accessKeyId,
+              secretAccessKey: credentials.secretAccessKey,
+              sessionToken: credentials.sessionToken || '', // Ensure non-undefined string
+              expiration: credentials.expiration || new Date(Date.now() + 3600 * 1000)
+            }
+          };
+        },
+        registerAuthListener: () => {
+
+          // console.log("onAuthChange", );
+          // call `onAuthChange` to notify the `StorageBrowser` that an end user has signed out
+        }
+    },
   });
   return <StorageBrowser />;
 }
@@ -28,94 +112,22 @@ function AuthenticatedContent(props: {
   signOut: any;
 }) {
   const { user, signOut } = props;
-  const [userGroups, setUserGroups] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [apiCallInProgress, setApiCallInProgress] = useState(false);
-
-  // Function to check if user is in admin group
-  const isAdmin = () => userGroups.includes('admin');
-
-  console.log("isAdmin", isAdmin);
   
-  // Get user groups when user is authenticated
-  useEffect(() => {
-    const getUserGroups = async () => {
-      if (!user) {
-        setUserGroups([]);
-        setIsLoading(false);
-        return;
-      }
-      
-      try {
-        setIsLoading(true);
-        setApiCallInProgress(true); // Set API call in progress
-        console.log('Calling Cognito API...');
-        
-        // Force refresh the session to get the latest token
-        const { tokens } = await fetchAuthSession({ forceRefresh: true });
-        
-        console.log('Cognito API call completed');
-        // Ensure we're handling the groups as a string array
-        const cognitoGroups = tokens?.idToken?.payload['cognito:groups'];
-        const groups = Array.isArray(cognitoGroups) ? cognitoGroups : [];
-        console.log('User groups:', groups);
-        setUserGroups(groups as string[]);
-      } catch (error) {
-        console.error('Error fetching user groups:', error);
-        setUserGroups([]);
-      } finally {
-        setIsLoading(false);
-        setApiCallInProgress(false); // API call completed
-      }
-    };
-
-    getUserGroups();
-  }, [user]);
-
   // Get the username from the user object
   const username = user?.signInDetails?.loginId || 'User';
-  console.log("loading", isLoading, "apiCall", apiCallInProgress);
 
-  // Show a full-page loading indicator when API call is in progress
-  if (apiCallInProgress) {
-    return (
-      <View padding="2rem" textAlign="center">
-        <Heading level={3}>Authenticating with Cognito</Heading>
-        <Text padding="1rem">Please wait while we verify your permissions...</Text>
-        <Flex justifyContent="center" padding="1rem">
-          <Loader />
-        </Flex>
-      </View>
-    );
-  }
-  console.log("userGroups",userGroups)
+  console.log("user", user);
+
   return (
     <>
       <Flex direction="row" alignItems="center" wrap="nowrap" gap="1rem">
         <Heading level={4}>{`Hello ${username}`}</Heading>
         <Button onClick={signOut}>Sign out</Button>
       </Flex>
-      
-      {isLoading ? (
-        <View padding="1rem">
-          <Text>Loading user permissions...</Text>
-          <Flex justifyContent="center" padding="1rem">
-            <Loader />
-          </Flex>
-        </View>
-      ) : 
-      // isAdmin() ? (
         <>
           <Text variation="success" padding="0.5rem">You have admin access</Text>
           <AdminStorageBrowser />
         </>
-      // ) : (
-      //   <View padding="1rem">
-      //     <Text variation="warning">You don't have permission to access storage.</Text>
-      //     <Text>Contact an administrator to be added to the admin group.</Text>
-      //   </View>
-      // )
-      }
     </>
   );
 }
@@ -125,9 +137,6 @@ const components = {
   Header() {
     return (
       <Flex direction="column" alignItems="center" gap="0.5rem" padding="1.5rem 0 1rem">
-        {/* <View backgroundColor="brand.primary.80" padding="1rem" borderRadius="50%" width="60px" height="60px" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Text fontSize="2rem" color="white">S3</Text>
-        </View> */}
         <Heading level={3} fontWeight="500" style={{ color: '#1a365d', margin: '0.5rem 0' }}>
           S3 Storage Browser
         </Heading>

@@ -1,50 +1,37 @@
 import { defineBackend } from "@aws-amplify/backend";
 import { auth } from "./auth/resource";
 import { Policy, PolicyStatement, Effect } from "aws-cdk-lib/aws-iam";
-import { S3_BUCKETS, USER_GROUPS, generatePolicyStatementsForGroup } from "./config/s3-config";
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Get the directory path in ES modules
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
-* @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
-*/
+ * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
+ */
 const backend = defineBackend({
   auth,
 });
 
-/**
-* Note: This code uses the S3 bucket configurations defined in the s3-config.ts file.
-* To add new buckets or modify existing ones, update the configuration in that file.
-* For more information on authorization access, visit: https://docs.amplify.aws/react/build-a-backend/storage/authorization/#available-actions
-*
-* Note: Ensure the buckets exist before deploying this code, as it only sets up IAM policies and does not create the S3 buckets.
-*/
-// Get the first bucket from the configuration
-const firstBucket = S3_BUCKETS.BUCKET_ONE;
+// Read buckets.json
+const bucketsPath = join(__dirname, '..', 'buckets.json');
+const bucketsConfig = JSON.parse(readFileSync(bucketsPath, 'utf-8')) as {
+  buckets: Array<{
+    bucket: string;
+    region: string;
+    prefix: string;
+    id: string;
+    type: string;
+    permissions: string[];
+    accesablegroups: string[];
+  }>
+};
 
-// Configure all buckets from the configuration file
-const bucketConfigs = Object.values(S3_BUCKETS).map(bucket => ({
-  name: bucket.name,
-  bucket_name: bucket.bucketName,
-  aws_region: bucket.region,
-  paths: bucket.paths || {},
-}));
-
-backend.addOutput({
-  version: "1.3",
-  storage: {
-    aws_region: firstBucket.region,
-    bucket_name: firstBucket.bucketName,
-    buckets: bucketConfigs,
-  },
-});
-
-/**
-* Create policies for each bucket and group based on the configuration
-*/
-
-// Create empty policies for unauthenticated and authenticated users
+// Create empty policy for unauthenticated users
 const unauthPolicy = new Policy(backend.stack, "customBucketUnauthPolicy", {
   statements: [
-    // No permissions for unauthenticated users by default
     new PolicyStatement({
       effect: Effect.DENY,
       actions: ["s3:*"],
@@ -53,61 +40,87 @@ const unauthPolicy = new Policy(backend.stack, "customBucketUnauthPolicy", {
   ],
 });
 
+// Create policy for authenticated users with access to all buckets
 const authPolicy = new Policy(backend.stack, "customBucketAuthPolicy", {
   statements: [
-    // No permissions for regular authenticated users by default
     new PolicyStatement({
-      effect: Effect.DENY,
-      actions: ["s3:*"],
-      resources: ["*"],
+      effect: Effect.ALLOW,
+      actions: [
+        "s3:ListBucket",
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      resources: (bucketsConfig as BucketsConfig).buckets.reduce((resources: string[], bucket: BucketConfig) => {
+        resources.push(`arn:aws:s3:::${bucket.bucket}`);
+        resources.push(`arn:aws:s3:::${bucket.bucket}/*`);
+        return resources;
+      }, []),
     }),
   ],
 });
 
-// Create policies for each group based on the new GROUP_POLICIES structure
+// Create policies for each group based on bucket access
 const groupPolicies = new Map<string, Policy>();
 
-// Process all user groups
-Object.values(USER_GROUPS).forEach((groupName: string) => {
-  // Generate policy statements for this group using our helper function
-  const policyStatements = generatePolicyStatementsForGroup(groupName);
-  
-  // Create a policy for this group if there are any statements
-  if (policyStatements.length > 0) {
-    // Convert PolicyConfig objects to PolicyStatement objects
-    const statements = policyStatements.map(policy => {
-      return new PolicyStatement({
-        effect: policy.effect,
-        actions: policy.actions,
-        resources: policy.resources,
-      });
-    });
-    
-    // Create a policy for this group
-    groupPolicies.set(groupName, new Policy(backend.stack, `customBucket${groupName}Policy`, {
-      statements,
-    }));
-  } else {
-    // Create an empty policy for groups with no permissions
-    groupPolicies.set(groupName, new Policy(backend.stack, `customBucket${groupName}Policy`, {
-      statements: [],
-    }));
-  }
+interface BucketConfig {
+  bucket: string;
+  region: string;
+  prefix: string;
+  id: string;
+  type: string;
+  permissions: string[];
+  accesablegroups: string[];
+}
+
+interface BucketsConfig {
+  buckets: BucketConfig[];
+}
+
+// Get all unique groups from buckets.json
+const allGroups = Array.from(new Set(
+  (bucketsConfig as BucketsConfig).buckets.reduce((groups: string[], bucket: BucketConfig) => {
+    return groups.concat(bucket.accesablegroups);
+  }, [])
+));
+
+// Create policies for each group
+allGroups.forEach((groupName) => {
+  // Get buckets accessible to this group
+  const accessibleBuckets = (bucketsConfig as BucketsConfig).buckets.filter((bucket: BucketConfig) => 
+    bucket.accesablegroups.includes(groupName)
+  );
+
+  // Create policy for this group
+  const groupPolicy = new Policy(backend.stack, `customBucket${groupName}Policy`, {
+    statements: [
+      new PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          "s3:ListBucket",
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ],
+        resources: accessibleBuckets.reduce((resources: string[], bucket: BucketConfig) => {
+          resources.push(`arn:aws:s3:::${bucket.bucket}`);
+          resources.push(`arn:aws:s3:::${bucket.bucket}/*`);
+          return resources;
+        }, []),
+      }),
+    ],
+  });
+
+  groupPolicies.set(groupName, groupPolicy);
 });
 
-// Add the policy to the unauthenticated user role
-backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(
-  unauthPolicy
-);
-
-// Add the policy to the authenticated user role
+// Attach policies to roles
+backend.auth.resources.unauthenticatedUserIamRole.attachInlinePolicy(unauthPolicy);
 backend.auth.resources.authenticatedUserIamRole.attachInlinePolicy(authPolicy);
 
-// Attach policies to each group based on the configuration
-Object.values(USER_GROUPS).forEach((groupName: string) => {
+// Attach policies to groups
+allGroups.forEach((groupName) => {
   const policy = groupPolicies.get(groupName);
-  
-  // Attach policy to group role if it exists
   if (policy && backend.auth.resources.groups[groupName]) {
     backend.auth.resources.groups[groupName].role.attachInlinePolicy(policy);
     console.log(`Attached S3 policy to ${groupName} group`);
@@ -115,5 +128,3 @@ Object.values(USER_GROUPS).forEach((groupName: string) => {
 });
 
 console.log('S3 bucket access policies configured successfully');
-console.log('Admin users have access to all configured buckets');
-console.log('Public users have limited access based on configuration');

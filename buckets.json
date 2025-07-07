@@ -1,0 +1,31 @@
+{
+  "buckets": [
+    {
+      "bucket": "my-existing-bucket-one",
+      "region": "eu-north-1",
+      "prefix": "",
+      "id": "1",
+      "type": "BUCKET",
+      "permissions": ["delete", "get", "list", "write"],
+      "accesablegroups": ["admin"]
+    },
+    {
+        "bucket": "my-existing-bucket-two",
+        "region": "eu-north-1",
+        "prefix": "",
+        "id": "2",
+        "type": "BUCKET",
+        "permissions": ["delete", "get", "list", "write"],
+        "accesablegroups": ["admin", "user"]
+      },
+      {
+        "bucket": "my-existing-bucket-three",
+        "region": "eu-north-1",
+        "prefix": "",
+        "id": "3",
+        "type": "BUCKET",
+        "permissions": ["delete", "get", "list", "write"],
+        "accesablegroups": ["admin", "finance"]
+      }
+  ]
+}
